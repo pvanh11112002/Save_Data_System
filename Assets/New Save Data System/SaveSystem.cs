@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 public static class SaveSystem
 {
     // --- CẤU HÌNH ---
-    private const bool USE_COMPRESSION = true; // Bật/Tắt nén
+    private const bool USE_COMPRESSION = false; // Bật/Tắt nén
     private const bool USE_NEWTONSOFT = true;  // Bật/Tắt Newtonsoft
 
     // --- LOGIC LƯU (SAVE) ---

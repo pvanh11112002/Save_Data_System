@@ -41,4 +41,14 @@ public class DataManager : MonoBehaviour
     // Nút bấm Debug nhanh trên DataManager
     [ContextMenu("Save All Force")]
     public void ForceSave() => SaveAll();
+
+    public void SetPlayerName(string newName)
+    {
+        Player.playerName = newName;
+    }
+
+    public string GetPlayerName()
+    {
+        return Player.playerName;
+    }    
 }

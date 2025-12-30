@@ -5,7 +5,6 @@ using UnityEditor;
 
 // ==========================================
 // PHẦN 1: RUNTIME CODE (Giữ nguyên khi Build)
-// Tuyệt đối KHÔNG được bọc phần này trong #if UNITY_EDITOR
 // ==========================================
 
 // --- BASE CLASS ---
@@ -37,8 +36,6 @@ public abstract class SaveDataSO<T> : ScriptableObject where T : new()
     }
 }
 
-// --- CONCRETE CLASSES ---
-// Bạn phải khai báo các class con ở đây để tạo file SO
 
 [CreateAssetMenu(fileName = "Player Data SO", menuName = "Save System/Player Data SO")]
 public class PlayerDataSO : SaveDataSO<PlayerData> { }
@@ -47,13 +44,7 @@ public class PlayerDataSO : SaveDataSO<PlayerData> { }
 public class GameConfigSO : SaveDataSO<GameData> { }
 
 
-// ==========================================
-// PHẦN 2: EDITOR CODE (Chỉ chạy trong Unity Editor)
-// Phần này SẼ bị cắt bỏ khi Build game để tối ưu
-// ==========================================
 #if UNITY_EDITOR
-
-// Tạo một class Editor base để không phải viết lại code vẽ nút bấm nhiều lần
 public class BaseSaveDataEditor<T> : Editor where T : new()
 {
     public override void OnInspectorGUI()
@@ -76,11 +67,11 @@ public class BaseSaveDataEditor<T> : Editor where T : new()
         if (GUILayout.Button("Save"))
         {
             myTarget.SaveData();
-            EditorUtility.SetDirty(target); // Đánh dấu để Unity lưu thay đổi trên file SO
+            EditorUtility.SetDirty(target); 
         }
         GUILayout.EndHorizontal();
 
-        GUI.backgroundColor = new Color(1f, 0.4f, 0.4f); // Màu đỏ nhạt
+        GUI.backgroundColor = new Color(1f, 0.4f, 0.4f); 
         if (GUILayout.Button("Delete Save File"))
         {
             if (EditorUtility.DisplayDialog("Delete Data",
@@ -91,14 +82,9 @@ public class BaseSaveDataEditor<T> : Editor where T : new()
                 EditorUtility.SetDirty(target);
             }
         }
-        GUI.backgroundColor = Color.white; // Reset màu
+        GUI.backgroundColor = Color.white; 
     }
 }
-
-// --- Đăng ký Editor cho từng loại SO ---
-// Vì class Editor Generic không được Unity hỗ trợ trực tiếp attribute [CustomEditor],
-// nên ta phải kế thừa thủ công như sau:
-
 [CustomEditor(typeof(PlayerDataSO))]
 public class PlayerDataSOEditor : BaseSaveDataEditor<PlayerData> { }
 
