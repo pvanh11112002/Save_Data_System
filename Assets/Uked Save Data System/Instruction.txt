@@ -1,0 +1,61 @@
+English and Vietnamese below =>
+-----------------VIETNAMESE------------------
+📘 HƯỚNG DẪN HỆ THỐNG SAVE DATA (ANHPV SAVE SYSTEM)
+Hệ thống lưu trữ dựa trên ScriptableObject và JSON, tối ưu cho Game Mobile Unity.
+
+1. Thành phần chính
+SaveSystem.cs: Xử lý đọc/ghi file, nén dữ liệu (GZip) và chuyển đổi JSON.
+SaveDataSO<T>: Lớp cha (Base class) cho các container dữ liệu. Cung cấp sẵn hàm SaveData(), LoadData(), DeleteData().
+BaseSaveDataEditor<T>: Tạo các nút bấm Save/Load/Delete trực tiếp trong cửa sổ Inspector để debug nhanh.
+
+2. Các bước thiết lập
+Định nghĩa Model: Tạo class C# chứa các biến cần lưu (ví dụ: PlayerData), đánh dấu là [Serializable]. (có thể viết trong GameDataModels)
+Tạo ScriptableObject: Tạo script mới kế thừa SaveDataSO<T> với Model vừa tạo.
+Tạo Editor Script: Tạo script kế thừa BaseSaveDataEditor<T> để kích hoạt giao diện nút bấm.
+Tạo Asset: Trong Unity, chuột phải chọn menu tạo Asset (ví dụ: Create > Game > Player Data).
+
+3. Cách sử dụng trong Code
+Load dữ liệu: Gọi _playerSO.LoadData() khi khởi tạo game (thường ở Awake của DataManager).
+Save dữ liệu: Gọi _playerSO.SaveData() khi thay đổi chỉ số hoặc tại OnApplicationPause/OnApplicationQuit.
+Truy cập: Dùng DataManager.Instance.Player.coins để đọc hoặc thay đổi giá trị.
+
+4. Cấu hình nâng cao (SaveSystem.cs)
+Nén dữ liệu: Đặt USE_COMPRESSION = true để bật GZip (giảm dung lượng file, chống người chơi đọc trộm JSON).
+Sử dụng Newtonsoft.Json:
+Thêm HAS_NEWTONSOFT vào Project Settings > Player > Scripting Define Symbols.
+Đặt USE_NEWTONSOFT = true để xử lý dữ liệu phức tạp tốt hơn.
+
+5. Lưu ý quan trọng
+Đường dẫn: File được lưu tại Application.persistentDataPath (Thư mục an toàn trên Mobile).
+Serialization: Đảm bảo tất cả class/struct con bên trong Model dữ liệu đều có attribute [Serializable].
+Mobile: Cơ chế tự động Save trong OnApplicationPause của DataManager là cách an toàn nhất để tránh mất dữ liệu trên Android/iOS.
+-----------------ENGLISH------------------
+📘 AnhPV Save System - Documentation
+A ScriptableObject-based save system using JSON serialization, optimized for Unity mobile development.
+
+1. Core Components
+SaveSystem.cs: Handles low-level I/O, JSON serialization, and optional GZip compression.
+SaveDataSO<T>: Base class for data containers. Provides SaveData(), LoadData(), and DeleteData() methods.
+BaseSaveDataEditor<T>: Custom Editor providing "Save", "Load", and "Delete" buttons directly in the Inspector.
+
+2. Setup Workflow
+Define Data Model: Create a plain C# class marked with [Serializable] (e.g., PlayerData).
+Create ScriptableObject: Create a script inheriting from SaveDataSO<YourModel>.
+Create Editor Script: Create a script inheriting from BaseSaveDataEditor<YourModel> to enable Inspector buttons.
+Instantiate Asset: In Unity Editor, right-click -> Create > Game > Player Data (or your custom menu).
+
+3. Usage in Code
+Loading: Call _playerSO.LoadData() at game start (e.g., in DataManager.Awake).
+Saving: Call _playerSO.SaveData() when data changes or during OnApplicationPause/OnApplicationQuit.
+Accessing Data: Use DataManager.Instance.Player.coins to read/write values.
+
+4. Advanced Configurations (SaveSystem.cs)
+Compression: Set USE_COMPRESSION = true to enable GZip (smaller files, harder to manually edit).
+Newtonsoft.Json:
+Add HAS_NEWTONSOFT to Project Settings > Player > Scripting Define Symbols.
+Set USE_NEWTONSOFT = true for faster and more robust serialization.
+
+5. Important Notes
+File Path: Data is stored at Application.persistentDataPath.
+Serialization: Ensure all custom classes/structs inside your data model are marked [Serializable].
+Mobile Stability: The DataManager automatically saves on OnApplicationPause, which is the most reliable way to prevent data loss on Android/iOS.
