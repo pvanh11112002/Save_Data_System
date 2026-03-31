@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.IO.Compression;
 using System.Text;
 using UnityEngine;
@@ -15,60 +15,108 @@ namespace AnhPV.SaveSystem
         private const bool USE_COMPRESSION = false; // Bật/Tắt nén
         private const bool USE_NEWTONSOFT = true;  // Bật/Tắt Newtonsoft
 
+        private static string _rootPath = "";
+
+        /// <summary>
+        /// Khởi tạo đường dẫn lưu trữ từ luồng chính.
+        /// Cần thiết để có thể gọi Save/Load từ luồng phụ (ThreadPool).
+        /// </summary>
+        public static void Initialize(string persistentDataPath)
+        {
+            _rootPath = persistentDataPath;
+            Debug.Log($"[SaveSystem] Initialized with path: {_rootPath}");
+        }
+
+        private static readonly object _fileLock = new object();
+
         // --- LOGIC LƯU (SAVE) ---
         public static void Save<T>(string filename, T data)
         {
             string path = GetPath(filename);
+            string tmpPath = path + ".tmp";
+            string backupPath = path + ".bak";
             string json = ToJson(data);
 
-            // Tạo thư mục nếu chưa có
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
-
-            if (USE_COMPRESSION)
+            lock (_fileLock)
             {
-                byte[] bytes = Encoding.UTF8.GetBytes(json);
-                using (FileStream fs = new FileStream(path, FileMode.Create))
-                using (GZipStream gzip = new GZipStream(fs, CompressionMode.Compress))
+                // Tạo thư mục nếu chưa có
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+
+                try
                 {
-                    gzip.Write(bytes, 0, bytes.Length);
+                    // 1. Viết vào file tmp trước (Atomic Save)
+                    if (USE_COMPRESSION)
+                    {
+                        byte[] bytes = Encoding.UTF8.GetBytes(json);
+                        using (FileStream fs = new FileStream(tmpPath, FileMode.Create))
+                        using (GZipStream gzip = new GZipStream(fs, CompressionMode.Compress))
+                        {
+                            gzip.Write(bytes, 0, bytes.Length);
+                        }
+                    }
+                    else
+                    {
+                        File.WriteAllText(tmpPath, json);
+                    }
+
+                    // 2. Ghi đè file thật (Rollback-safe)
+                    if (File.Exists(backupPath)) File.Delete(backupPath);
+                    if (File.Exists(path)) File.Move(path, backupPath);
+                    File.Move(tmpPath, path);
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"[SaveSystem] Ghi file gặp lỗi: {e.Message}");
                 }
             }
-            else
-            {
-                File.WriteAllText(path, json);
-            }
 
-            Debug.Log($"[SaveSystem] Saved: {filename}");
+            Debug.Log($"[SaveSystem] Saved (Safe): {filename}");
         }
 
         // --- LOGIC TẢI (LOAD) ---
         public static T Load<T>(string filename) where T : new()
         {
             string path = GetPath(filename);
-            if (!File.Exists(path)) return new T(); // Trả về data mới nếu file không tồn tại
+            string backupPath = path + ".bak";
 
-            try
+            lock (_fileLock)
             {
-                string json = "";
-                if (USE_COMPRESSION)
+                if (!File.Exists(path))
                 {
-                    using (FileStream fs = new FileStream(path, FileMode.Open))
-                    using (GZipStream gzip = new GZipStream(fs, CompressionMode.Decompress))
-                    using (StreamReader reader = new StreamReader(gzip))
+                    if (File.Exists(backupPath))
                     {
-                        json = reader.ReadToEnd();
+                        File.Copy(backupPath, path);
+                        Debug.LogWarning($"[SaveSystem] Khôi phục file save từ Backup: {filename}");
+                    }
+                    else
+                    {
+                        return new T(); // Trả về data mới nếu file không tồn tại
                     }
                 }
-                else
+
+                try
                 {
-                    json = File.ReadAllText(path);
+                    string json = "";
+                    if (USE_COMPRESSION)
+                    {
+                        using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        using (GZipStream gzip = new GZipStream(fs, CompressionMode.Decompress))
+                        using (StreamReader reader = new StreamReader(gzip))
+                        {
+                            json = reader.ReadToEnd();
+                        }
+                    }
+                    else
+                    {
+                        json = File.ReadAllText(path);
+                    }
+                    return FromJson<T>(json);
                 }
-                return FromJson<T>(json);
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"[SaveSystem] Load Error: {e.Message}. Recreated new data.");
-                return new T();
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"[SaveSystem] Load Error: {e.Message}. Recreated new data.");
+                    return new T();
+                }
             }
         }
 
@@ -80,7 +128,15 @@ namespace AnhPV.SaveSystem
         }
 
         // --- HELPER NỘI BỘ ---
-        private static string GetPath(string filename) => Path.Combine(Application.persistentDataPath, filename);
+        private static string GetPath(string filename)
+        {
+            if (string.IsNullOrEmpty(_rootPath))
+            {
+                // Fallback cho trường hợp chưa kịp Init (chỉ an toàn nếu gọi từ Main Thread)
+                _rootPath = Application.persistentDataPath;
+            }
+            return Path.Combine(_rootPath, filename);
+        }
 
         private static string ToJson<T>(T data)
         {
