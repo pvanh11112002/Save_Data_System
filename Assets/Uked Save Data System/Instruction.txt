@@ -16,7 +16,7 @@ Tạo Asset: Trong Unity, chuột phải chọn menu tạo Asset (ví dụ: Crea
 
 3. Cách sử dụng trong Code
 Load dữ liệu: Gọi _playerSO.LoadData() khi khởi tạo game (thường ở Awake của DataManager).
-Save dữ liệu: Gọi _playerSO.SaveData() khi thay đổi chỉ số hoặc tại OnApplicationPause/OnApplicationQuit.
+Thay đổi dữ liệu: KHI THAY ĐỔI CÁC CHỈ SỐ, hãy gọi DataManager.Instance.SetDirty(). Hệ thống sẽ tự động tổng hợp và lưu ngầm (Background Thread) để tránh giật lag.
 Truy cập: Dùng DataManager.Instance.Player.coins để đọc hoặc thay đổi giá trị.
 
 4. Cấu hình nâng cao (SaveSystem.cs)
@@ -24,6 +24,7 @@ Nén dữ liệu: Đặt USE_COMPRESSION = true để bật GZip (giảm dung l�
 Sử dụng Newtonsoft.Json:
 Thêm HAS_NEWTONSOFT vào Project Settings > Player > Scripting Define Symbols.
 Đặt USE_NEWTONSOFT = true để xử lý dữ liệu phức tạp tốt hơn.
+Bảo mật & Luồng (Tự động): Hệ thống đã tích hợp sẵn Atomic Save (.tmp/.bak) và Mutex Lock để chống mất file save và đụng độ luồng tải.
 
 5. Lưu ý quan trọng
 Đường dẫn: File được lưu tại Application.persistentDataPath (Thư mục an toàn trên Mobile).
@@ -46,7 +47,7 @@ Instantiate Asset: In Unity Editor, right-click -> Create > Game > Player Data (
 
 3. Usage in Code
 Loading: Call _playerSO.LoadData() at game start (e.g., in DataManager.Awake).
-Saving: Call _playerSO.SaveData() when data changes or during OnApplicationPause/OnApplicationQuit.
+Modifying Data: WHEN CHANGING VALUES, simply call DataManager.Instance.SetDirty(). The system will optimize and auto-save on a Background Thread to prevent FPS drops.
 Accessing Data: Use DataManager.Instance.Player.coins to read/write values.
 
 4. Advanced Configurations (SaveSystem.cs)
@@ -54,6 +55,7 @@ Compression: Set USE_COMPRESSION = true to enable GZip (smaller files, harder to
 Newtonsoft.Json:
 Add HAS_NEWTONSOFT to Project Settings > Player > Scripting Define Symbols.
 Set USE_NEWTONSOFT = true for faster and more robust serialization.
+Safety & Threading (Auto): The system automatically uses Atomic Save (.tmp/.bak) and Mutex Locks to prevent file corruption and thread collisions.
 
 5. Important Notes
 File Path: Data is stored at Application.persistentDataPath.
