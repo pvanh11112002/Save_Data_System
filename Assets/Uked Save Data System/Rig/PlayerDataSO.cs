@@ -1,8 +1,11 @@
 using AnhPV.SaveSystem;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Game/Player Data")]
+
+[CreateAssetMenu(fileName ="Player Data SO", menuName = "Game/Game Data")]
 public class PlayerDataSO : SaveDataSO<PlayerData> { }
 
 #if UNITY_EDITOR
